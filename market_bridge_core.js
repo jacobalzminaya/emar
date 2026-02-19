@@ -811,18 +811,73 @@ const MarketBridge = {
         this.updateTrapUI();
         this.updateStatsUI();
     },
-    exportData() {
-        let csv = "data:text/csv;charset=utf-8,REPORTE QUANTUM V8.0\nCapital:," + this.equity.toFixed(2) + "\n\nVENTANA,TOTAL,ACIERTOS,%\n";
-        for (let v = 3; v <= 20; v++) {
-            const s = this.stats[v];
-            csv += `V${v},${s.total},${s.hits},${(s.total>0?(s.hits/s.total*100):0).toFixed(2)}%\n`;
+exportData() {
+    // 1. Análisis de Horarios (Encontrar la "Hora de Oro")
+    const hourStats = {};
+    this.priceHistory.forEach(entry => {
+        const hour = new Date(entry.time).getHours() + ":00";
+        if (!hourStats[hour]) hourStats[hour] = { total: 0, wins: 0 };
+        // Si tienes registro de trades en el historial:
+        if (entry.trade) {
+            hourStats[hour].total++;
+            if (entry.result === 'WIN') hourStats[hour].wins++;
         }
-        const link = document.createElement("a");
-        link.setAttribute("href", encodeURI(csv));
-        link.setAttribute("download", "Reporte_Quantum.csv");
-        document.body.appendChild(link); link.click();
-        this.addVisibleLog("Reporte exportado correctamente", "#00aaff");
-    },
+    });
+
+    let bestHour = "Sin datos";
+    let maxAcc = 0;
+    for (let h in hourStats) {
+        let acc = (hourStats[h].wins / hourStats[h].total) * 100;
+        if (acc > maxAcc) { maxAcc = acc; bestHour = h; }
+    }
+
+    // 2. Análisis de Trampas y Mensajes
+    const totalTraps = document.getElementById('trap-count')?.innerText || "0";
+    const avoided = document.getElementById('traps-avoided')?.innerText || "0";
+    const lastMsg = this.lastLeaderV ? `PATRÓN V${this.lastLeaderV}` : "NINGUNO";
+
+    // 3. Construcción del CSV Reforzado
+    let csv = "data:text/csv;charset=utf-8,";
+    csv += "=== REPORTE DE INTELIGENCIA QUANTUM ALPHA ===\n";
+    csv += `Fecha de Auditoria: ${new Date().toLocaleString()}\n`;
+    csv += `Capital Final: ${this.equity.toFixed(2)}\n`;
+    csv += `Hora mas Rentable: ${bestHour} (${maxAcc.toFixed(2)}% Acc)\n`;
+    csv += `Trampas Detectadas: ${totalTraps}\n`;
+    csv += `Trampas Evitadas: ${avoided}\n`;
+    csv += `Estrategia/Mensaje mas Letal: ${lastMsg}\n\n`;
+
+    // 4. Tabla de Rendimiento por Ventana (V3-V20)
+    csv += "VENTANA GENETICA,TOTAL TRADES,ACIERTOS,EFECTIVIDAD %,ESTADO\n";
+    
+    for (let v = 3; v <= 20; v++) {
+        const s = this.stats[v];
+        if (s && s.total > 0) {
+            const acc = (s.hits / s.total * 100).toFixed(2);
+            const status = acc >= 60 ? "RENTABLE" : "RIESGO";
+            csv += `V${v},${s.total},${s.hits},${acc}%,${status}\n`;
+        }
+    }
+
+    // 5. Historial de Tendencias Recientes
+    csv += "\nULTIMOS MOVIMIENTOS DEL MERCADO (MICRO-TENDENCIAS)\n";
+    csv += "TIMESTAMP,PRECIO,DIRECCION,VOLATILIDAD\n";
+    this.priceHistory.slice(-20).forEach(p => {
+        csv += `${new Date(p.time).toLocaleTimeString()},${p.price},${p.dir || 'N/A'},${p.vol || 'Baja'}\n`;
+    });
+
+    // 6. Ejecución de la descarga
+    const encodedUri = encodeURI(csv);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Auditoria_Quantum_${Date.now()}.csv`);
+    document.body.appendChild(link); 
+    link.click();
+    document.body.removeChild(link);
+
+    if (typeof UIManager !== 'undefined') {
+        UIManager.addLog("AUDITORÍA COMPLETA EXPORTADA", "#00ffaa");
+    }
+},
     async trainModel() {
         if (!window.tf) {
             console.warn("TensorFlow.js no está cargado");
@@ -1714,4 +1769,5 @@ MarketBridge.projectStreakContinuation = function() {
         color: "#aaaaaa", 
         level: 0 
     };
+
 };
