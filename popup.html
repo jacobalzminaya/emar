@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>CMD Bridge</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ width:190px; background:#08080f; color:#aaa; font-family:'Segoe UI',system-ui,sans-serif; font-size:11px; user-select:none; }
+  .header{ background:#0f0f1a; padding:7px 10px; border-bottom:1px solid #1a1a2a; display:flex; align-items:center; justify-content:space-between; }
+  .header-left{ display:flex; align-items:center; gap:6px; }
+  .header-title{ font-size:11px; font-weight:700; color:#00e5ff; letter-spacing:.05em; }
+  .status-dot{ width:6px; height:6px; border-radius:50%; background:#333; transition:all .3s; flex-shrink:0; }
+  .status-dot.on{ background:#00ff88; box-shadow:0 0 5px rgba(0,255,136,.6); }
+  .count{ font-size:9px; color:#333; }
+  .count.active{ color:#00aa44; }
+
+  .tf-row{ padding:6px 10px; border-bottom:1px solid #111; }
+  .tf-label{ font-size:8px; color:#222; text-transform:uppercase; letter-spacing:.08em; font-weight:700; margin-bottom:4px; }
+  .tf-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:2px; }
+  .tf-btn{ padding:4px 2px; border-radius:3px; border:1px solid #1a1a1a; background:#090909; color:#2a2a2a; font-size:9px; font-weight:700; cursor:pointer; text-align:center; transition:all .15s; }
+  .tf-btn:hover{ border-color:#2a2a2a; color:#444; }
+  .tf-btn.active{ background:#001a08; border-color:#00ff8844; color:#00cc44; }
+
+  .btn-main{ display:block; width:calc(100% - 20px); margin:8px 10px; padding:7px; border-radius:5px; border:none; cursor:pointer; font-size:11px; font-weight:700; letter-spacing:.04em; transition:all .2s; }
+  .btn-enable{ background:#001a08; border:1px solid #00aa4433; color:#00aa44; }
+  .btn-enable:hover{ color:#00ff88; border-color:#00ff8855; }
+  .btn-disable{ background:#1a0000; border:1px solid #aa000033; color:#aa0000; }
+  .btn-disable:hover{ color:#ff4444; border-color:#ff444455; }
+
+  .asset-row{ padding:3px 10px 7px; font-size:9px; color:#1e1e1e; text-align:center; }
+  .asset-row span{ color:#226622; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="status-dot" id="dot"></div>
+    <div class="header-title">CMD BRIDGE</div>
+  </div>
+  <div class="count" id="count-badge">0 velas</div>
+</div>
+
+<div class="tf-row">
+  <div class="tf-label">Temporalidad</div>
+  <div class="tf-grid">
+    <button class="tf-btn" id="tf-5"  data-tf="5">5s</button>
+    <button class="tf-btn" id="tf-10" data-tf="10">10s</button>
+    <button class="tf-btn" id="tf-15" data-tf="15">15s</button>
+    <button class="tf-btn" id="tf-30" data-tf="30">30s</button>
+    <button class="tf-btn active" id="tf-60" data-tf="60">1m</button>
+  </div>
+</div>
+
+<button class="btn-main btn-enable" id="btn-toggle">▶ Activar</button>
+<div class="asset-row">Par: <span id="asset-name">–</span></div>
+
+<script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CMD · AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   RESET + VARIABLES
+═══════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg     : #04040e;
+  --bg1    : #07071a;
+  --bg2    : #0b0b22;
+  --bg3    : #10102e;
+  --line   : rgba(255,255,255,.05);
+  --line2  : rgba(255,255,255,.09);
+  --green  : #00f5a0;
+  --green2 : #00c97a;
+  --green3 : rgba(0,245,160,.07);
+  --green4 : rgba(0,245,160,.15);
+  --red    : #ff2d55;
+  --red2   : #cc0033;
+  --red3   : rgba(255,45,85,.07);
+  --red4   : rgba(255,45,85,.15);
+  --gold   : #ffc82e;
+  --cyan   : #00e5ff;
+  --purple : #b054ff;
+  --dim    : rgba(255,255,255,.18);
+  --muted  : rgba(255,255,255,.42);
+  --text   : rgba(255,255,255,.78);
+  --mono   : 'Space Mono', monospace;
+  --sans   : 'Sora', sans-serif;
+  --r      : 14px;
+  --r2     : 10px;
+}
+
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:13px;
+  display:flex;flex-direction:column;
+}
+
+/* Background layers */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 700px 350px at 50% -80px, rgba(0,100,255,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 300px 300px at 90% 60%, rgba(176,84,255,.04) 0%, transparent 70%);
+  pointer-events:none;
+}
+
+/* Dot grid */
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;
+  background-image:radial-gradient(circle, rgba(255,255,255,.045) 1px, transparent 1px);
+  background-size:28px 28px;
+  pointer-events:none;
+}
+
+*{position:relative;z-index:1}
+::-webkit-scrollbar{width:2px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
+
+/* ═══════════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════════ */
+#topbar{
+  height:46px;padding:0 16px;
+  display:flex;align-items:center;gap:10px;
+  background:rgba(4,4,14,.92);
+  border-bottom:1px solid var(--line2);
+  backdrop-filter:blur(24px);
+  flex-shrink:0;
+}
+
+#logo{
+  font-family:var(--mono);font-size:.75em;font-weight:700;
+  color:var(--cyan);letter-spacing:.25em;
+  text-shadow:0 0 20px rgba(0,229,255,.4);
+  flex-shrink:0;
+}
+
+.tb-sep{width:1px;height:18px;background:var(--line2);flex-shrink:0}
+.tb-gap{flex:1}
+
+/* Bridge badge */
+#bridge-wrap{
+  display:flex;align-items:center;gap:6px;
+  background:var(--bg2);
+  border:1px solid var(--line2);
+  border-radius:20px;
+  padding:4px 10px 4px 8px;
+  transition:all .4s;
+}
+#bridge-wrap.live{
+  background:rgba(0,245,160,.06);
+  border-color:rgba(0,245,160,.2);
+}
+#bridge-wrap.warn{
+  background:rgba(255,200,46,.05);
+  border-color:rgba(255,200,46,.2);
+}
+#bridge-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(255,255,255,.15);
+  transition:all .4s;flex-shrink:0;
+}
+#bridge-dot.on{background:var(--green);box-shadow:0 0 8px rgba(0,245,160,.7);animation:blink 2s ease-in-out infinite}
+#bridge-dot.warn{background:var(--gold);box-shadow:0 0 6px rgba(255,200,46,.5)}
+#bridge-label{
+  font-family:var(--mono);font-size:.55em;
+  color:var(--dim);letter-spacing:.1em;
+  transition:color .4s;
+}
+#bridge-dot.on ~ #bridge-label{color:var(--green)}
+#bridge-dot.warn ~ #bridge-label{color:var(--gold)}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* Ctrl btns */
+.ctrl-btn{
+  font-family:var(--mono);font-size:.58em;font-weight:700;
+  padding:5px 14px;border-radius:20px;
+  border:1px solid var(--line2);background:transparent;
+  color:var(--dim);cursor:pointer;
+  letter-spacing:.06em;transition:all .2s;white-space:nowrap;
+}
+.ctrl-btn:hover{border-color:var(--muted);color:var(--text)}
+.ctrl-btn.on{background:var(--green3);border-color:rgba(0,245,160,.3);color:var(--green)}
+.ctrl-btn.danger{color:rgba(255,45,85,.45);border-color:rgba(255,45,85,.12)}
+.ctrl-btn.danger:hover{color:var(--red);border-color:rgba(255,45,85,.35)}
+
+#voice-btn{
+  font-family:var(--mono);font-size:.58em;
+  padding:5px 10px;border-radius:20px;
+  border:1px solid var(--line2);background:transparent;
+  color:var(--dim);cursor:pointer;transition:all .2s;
+}
+#voice-btn.voice-on{border-color:rgba(0,229,255,.3);color:var(--cyan)}
+
+/* ═══════════════════════════════════════════
+   MAIN
+═══════════════════════════════════════════ */
+#main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* ═══════════════════════════════════════════
+   SIGNAL HERO
+═══════════════════════════════════════════ */
+#signal-card{
+  flex-shrink:0;
+  padding:18px 18px 16px;
+  border-bottom:1px solid var(--line);
+  background:var(--bg1);
+  transition:background .5s,box-shadow .5s;
+  animation:cardIn .35s ease both;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+#signal-card.buy {background:linear-gradient(150deg,rgba(0,55,30,.75) 0%,var(--bg1) 55%)}
+#signal-card.sell{background:linear-gradient(150deg,rgba(60,0,15,.75) 0%,var(--bg1) 55%)}
+#signal-card.buy {box-shadow:inset 0 0 60px rgba(0,245,160,.03)}
+#signal-card.sell{box-shadow:inset 0 0 60px rgba(255,45,85,.03)}
+
+/* Row 1: icon + main text + badge */
+.sig-top{display:flex;align-items:center;gap:13px;margin-bottom:14px}
+
+.sig-icon{
+  width:48px;height:48px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.55em;flex-shrink:0;
+  background:var(--bg2);border:1px solid var(--line2);
+  transition:all .45s;
+}
+#signal-card.buy  .sig-icon{
+  background:rgba(0,80,40,.55);
+  border-color:rgba(0,245,160,.22);
+  box-shadow:0 0 24px rgba(0,245,160,.12);
+  animation:pulseG 2.8s ease-in-out infinite;
+}
+#signal-card.sell .sig-icon{
+  background:rgba(80,0,20,.55);
+  border-color:rgba(255,45,85,.22);
+  box-shadow:0 0 24px rgba(255,45,85,.12);
+  animation:pulseR 2.8s ease-in-out infinite;
+}
+@keyframes pulseG{0%,100%{box-shadow:0 0 16px rgba(0,245,160,.12)}50%{box-shadow:0 0 32px rgba(0,245,160,.35)}}
+@keyframes pulseR{0%,100%{box-shadow:0 0 16px rgba(255,45,85,.12)}50%{box-shadow:0 0 32px rgba(255,45,85,.35)}}
+
+.sig-body{flex:1;min-width:0}
+
+#sig-action{
+  font-family:var(--mono);font-size:1.05em;font-weight:700;
+  letter-spacing:.12em;line-height:1;color:var(--dim);
+  transition:color .35s;
+}
+#signal-card.buy  #sig-action{color:var(--green);text-shadow:0 0 24px rgba(0,245,160,.45)}
+#signal-card.sell #sig-action{color:var(--red);text-shadow:0 0 24px rgba(255,45,85,.45)}
+
+#sig-reason{
+  font-size:.7em;color:var(--muted);margin-top:5px;
+  line-height:1.45;max-height:2.9em;overflow:hidden;
+}
+
+#sig-conf{
+  font-family:var(--mono);font-size:.72em;font-weight:700;
+  padding:6px 14px;border-radius:20px;
+  background:var(--bg2);border:1px solid var(--line2);
+  color:var(--dim);flex-shrink:0;transition:all .3s;
+}
+#signal-card.buy  #sig-conf{background:rgba(0,80,40,.4);border-color:rgba(0,245,160,.25);color:var(--green)}
+#signal-card.sell #sig-conf{background:rgba(80,0,20,.4);border-color:rgba(255,45,85,.25);color:var(--red)}
+
+/* Row 2: probability bars */
+.prob-wrap{display:flex;flex-direction:column;gap:6px}
+.prob-row{display:flex;align-items:center;gap:8px}
+.prob-icon{
+  font-family:var(--mono);font-size:.55em;
+  width:16px;text-align:center;flex-shrink:0;
+  color:var(--dim);
+}
+.prob-track{
+  flex:1;height:5px;background:rgba(255,255,255,.04);
+  border-radius:3px;overflow:hidden;
+}
+.prob-fill{height:100%;border-radius:3px;transition:width .55s cubic-bezier(.2,.8,.3,1)}
+#sig-fill-g{background:linear-gradient(90deg,var(--green2),var(--green))}
+#sig-fill-r{background:linear-gradient(90deg,var(--red2),var(--red))}
+.prob-pct{
+  font-family:var(--mono);font-size:.55em;
+  width:30px;text-align:right;flex-shrink:0;color:var(--muted);
+}
+
+/* ═══════════════════════════════════════════
+   BRIDGE DATA LIVE — nueva sección prominente
+═══════════════════════════════════════════ */
+#bridge-data{
+  flex-shrink:0;
+  padding:10px 18px;
+  background:var(--bg);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:10px;
+}
+#bridge-data.hidden{display:none}
+
+#last-candle-pill{
+  display:flex;align-items:center;gap:7px;
+  padding:5px 12px;border-radius:20px;
+  background:var(--bg2);border:1px solid var(--line2);
+  transition:all .3s;flex-shrink:0;
+}
+#last-candle-pill.green{background:rgba(0,80,40,.4);border-color:rgba(0,245,160,.25)}
+#last-candle-pill.red  {background:rgba(80,0,20,.4); border-color:rgba(255,45,85,.25)}
+
+#lcp-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:background .3s}
+#last-candle-pill.green #lcp-dot{background:var(--green);box-shadow:0 0 8px rgba(0,245,160,.6)}
+#last-candle-pill.red   #lcp-dot{background:var(--red);box-shadow:0 0 8px rgba(255,45,85,.6)}
+
+#lcp-text{
+  font-family:var(--mono);font-size:.58em;font-weight:700;
+  color:var(--dim);letter-spacing:.06em;transition:color .3s;
+}
+#last-candle-pill.green #lcp-text{color:var(--green)}
+#last-candle-pill.red   #lcp-text{color:var(--red)}
+
+#lcp-strength{
+  font-family:var(--mono);font-size:.5em;
+  color:var(--muted);padding-left:4px;
+  border-left:1px solid var(--line2);
+}
+
+/* Asset tag */
+#asset-tag{
+  font-family:var(--mono);font-size:.56em;
+  color:var(--cyan);padding:4px 10px;
+  border:1px solid rgba(0,229,255,.15);
+  border-radius:20px;background:rgba(0,229,255,.04);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:120px;
+}
+#asset-tag:empty{display:none}
+
+#bridge-tf{
+  font-family:var(--mono);font-size:.52em;
+  color:var(--dim);padding:4px 10px;
+  border:1px solid var(--line);border-radius:20px;
+  background:var(--bg2);
+}
+
+#bridge-data-gap{flex:1}
+
+#bridge-count{
+  font-family:var(--mono);font-size:.52em;
+  color:var(--dim);padding:4px 10px;
+  border:1px solid var(--line);border-radius:20px;
+  background:var(--bg2);white-space:nowrap;
+}
+#bridge-count span{color:var(--muted)}
+
+/* ═══════════════════════════════════════════
+   SENTIMENT
+═══════════════════════════════════════════ */
+#sent-section{
+  flex-shrink:0;padding:9px 18px;
+  border-bottom:1px solid var(--line);
+  background:var(--bg);
+  display:flex;align-items:center;gap:10px;
+  transition:background .4s;
+}
+#sent-section.bull{background:linear-gradient(90deg,rgba(0,60,25,.35),var(--bg))}
+#sent-section.bear{background:linear-gradient(90deg,rgba(60,0,15,.35),var(--bg))}
+
+#sent-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--dim);flex-shrink:0;transition:background .4s;
+}
+#sent-section.bull #sent-dot{background:var(--green)}
+#sent-section.bear #sent-dot{background:var(--red)}
+
+.sent-track{
+  flex:1;height:4px;background:rgba(255,255,255,.04);
+  border-radius:3px;overflow:hidden;
+}
+#sent-fill{
+  height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--green2),var(--green));
+  transition:width .6s ease;
+}
+#sent-section.bear #sent-fill{background:linear-gradient(90deg,var(--red2),var(--red))}
+
+#sent-lbl{font-size:.68em;color:var(--muted);white-space:nowrap}
+#sent-section.bull #sent-lbl{color:var(--green)}
+#sent-section.bear #sent-lbl{color:var(--red)}
+
+#sent-score{
+  font-family:var(--mono);font-size:.6em;
+  color:var(--dim);white-space:nowrap;
+}
+
+/* ═══════════════════════════════════════════
+   TP / SL BOX
+═══════════════════════════════════════════ */
+#tpsl-box{
+  flex-shrink:0;padding:11px 18px 12px;
+  border-bottom:1px solid var(--line);
+  background:var(--bg1);
+}
+.tpsl-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:8px;
+}
+.tpsl-title{font-size:.62em;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+#tpsl-rr{
+  font-family:var(--mono);font-size:.62em;
+  color:var(--dim);transition:color .3s;
+}
+.tpsl-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.tpsl-row:last-child{margin-bottom:0}
+.tpsl-lbl{
+  font-family:var(--mono);font-size:.56em;font-weight:700;
+  width:18px;flex-shrink:0;
+}
+.tpsl-row.tp .tpsl-lbl{color:var(--green)}
+.tpsl-row.sl .tpsl-lbl{color:var(--red)}
+.tpsl-track{flex:1;height:4px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden}
+.tpsl-fill{height:100%;border-radius:3px;width:0%;transition:width .5s ease}
+.tpsl-row.tp .tpsl-fill{background:linear-gradient(90deg,var(--green2),var(--green))}
+.tpsl-row.sl .tpsl-fill{background:linear-gradient(90deg,var(--red2),var(--red))}
+.tpsl-val{
+  font-family:var(--mono);font-size:.58em;
+  width:50px;text-align:right;flex-shrink:0;color:var(--dim);
+}
+.tpsl-row.tp .tpsl-val{color:var(--green)}
+.tpsl-row.sl .tpsl-val{color:var(--red)}
+
+/* ═══════════════════════════════════════════
+   CANDLE HISTORY
+═══════════════════════════════════════════ */
+#candle-section{
+  flex-shrink:0;padding:8px 18px;
+  border-bottom:1px solid var(--line);
+  background:var(--bg);
+  display:flex;align-items:center;gap:10px;
+}
+#candle-count-wrap{
+  font-family:var(--mono);font-size:.55em;
+  color:var(--dim);white-space:nowrap;flex-shrink:0;
+}
+#candle-count{color:var(--muted)}
+
+#candle-strip{
+  flex:1;display:flex;align-items:flex-end;
+  gap:2px;height:20px;overflow:hidden;
+}
+.cv{
+  flex-shrink:0;width:5px;border-radius:2px;
+  opacity:.4;transition:opacity .2s,height .3s;
+  min-height:3px;
+}
+.cv.g{background:var(--green2)}
+.cv.r{background:var(--red2)}
+.cv.last{opacity:1!important}
+.cv.g.last{box-shadow:0 0 6px var(--green)}
+.cv.r.last{box-shadow:0 0 6px var(--red)}
+
+/* ═══════════════════════════════════════════
+   STATS ROW
+═══════════════════════════════════════════ */
+#stats-section{
+  flex-shrink:0;display:flex;gap:0;
+  border-bottom:1px solid var(--line);
+}
+.stat-card{
+  flex:1;padding:11px 16px;
+  background:var(--bg1);
+  border-right:1px solid var(--line);
+  display:flex;flex-direction:column;gap:4px;
+}
+.stat-card:last-child{border-right:none}
+.stat-lbl{
+  font-size:.52em;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.1em;
+}
+.acc-main{font-family:var(--mono);font-size:1.1em;font-weight:700;line-height:1}
+.acc-sub{font-size:.52em;color:var(--muted)}
+.acc-hi{font-size:.5em;color:var(--dim)}
+.acc-empty{font-size:.54em;color:var(--dim)}
+#mem-count{font-family:var(--mono);font-size:.72em;color:var(--muted)}
+
+/* ═══════════════════════════════════════════
+   BOTTOM STATUS BAR
+═══════════════════════════════════════════ */
+#statusbar{
+  flex-shrink:0;
+  padding:7px 18px;
+  background:rgba(4,4,14,.95);
+  border-top:1px solid var(--line2);
+  display:flex;align-items:center;gap:10px;
+  margin-top:auto;
+}
+#wifi-title{
+  font-family:var(--mono);font-size:.52em;
+  color:var(--dim);flex:1;letter-spacing:.06em;
+}
+#status-time{
+  font-family:var(--mono);font-size:.5em;
+  color:rgba(255,255,255,.12);
+}
+
+/* ═══════════════════════════════════════════
+   TOAST NOTIFICATION
+═══════════════════════════════════════════ */
+#toast-wrap{
+  position:fixed;top:56px;left:50%;transform:translateX(-50%);
+  z-index:9999;pointer-events:none;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.toast{
+  font-family:var(--mono);font-size:.62em;font-weight:700;
+  padding:7px 18px;border-radius:20px;
+  border:1px solid;
+  animation:toastIn .25s ease both, toastOut .4s ease 2.8s both;
+  white-space:nowrap;
+}
+.toast.green{background:rgba(0,60,30,.9);border-color:rgba(0,245,160,.35);color:var(--green)}
+.toast.red  {background:rgba(60,0,15,.9); border-color:rgba(255,45,85,.35); color:var(--red)}
+.toast.info {background:rgba(0,20,40,.9); border-color:rgba(0,229,255,.25); color:var(--cyan)}
+@keyframes toastIn {from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(-4px)}}
+
+/* ═══════════════════════════════════════════
+   HIDDEN LEGACY
+═══════════════════════════════════════════ */
+#hidden-legacy{display:none!important;visibility:hidden!important;position:absolute;pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- ══ TOPBAR ═══════════════════════════════════════════ -->
+<div id="topbar">
+  <div id="logo">CMD·AI</div>
+  <div class="tb-sep"></div>
+  <!-- Bridge status badge -->
+  <div id="bridge-wrap">
+    <div id="bridge-dot"></div>
+    <span id="bridge-label">OFFLINE</span>
+  </div>
+  <div class="tb-gap"></div>
+  <button id="auto-btn" class="ctrl-btn" onclick="window.toggleAutoMode()">⚫ AUTO</button>
+  <div class="tb-sep"></div>
+  <button class="ctrl-btn danger" title="Reiniciar todo" onclick="window.resetAll()">↺</button>
+  <button id="voice-btn" title="Activar/Desactivar voz" onclick="typeof Voice!=='undefined'&&Voice.toggle()">🔇</button>
+</div>
+
+<!-- ══ MAIN ══════════════════════════════════════════════ -->
+<div id="main">
+
+  <!-- ── SEÑAL PRINCIPAL ───────────────────────────────── -->
+  <div id="signal-card" class="wait">
+    <div class="sig-top">
+      <div class="sig-icon" id="sig-icon">⏸</div>
+      <div class="sig-body">
+        <div id="sig-action">⏸ ESPERANDO</div>
+        <div id="sig-reason">Acumulando datos de velas…</div>
+      </div>
+      <div id="sig-conf">–</div>
+    </div>
+    <div class="prob-wrap">
+      <div class="prob-row">
+        <div class="prob-icon">▲</div>
+        <div class="prob-track"><div class="prob-fill" id="sig-fill-g" style="width:50%"></div></div>
+        <div class="prob-pct" id="sig-bar-g">50%</div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-icon">▼</div>
+        <div class="prob-track"><div class="prob-fill" id="sig-fill-r" style="width:50%"></div></div>
+        <div class="prob-pct" id="sig-bar-r">50%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DATOS BRIDGE EN VIVO ──────────────────────────── -->
+  <div id="bridge-data" class="hidden">
+    <div id="last-candle-pill">
+      <div id="lcp-dot"></div>
+      <div id="lcp-text">– –</div>
+      <div id="lcp-strength">F–</div>
+    </div>
+    <div id="asset-tag"></div>
+    <div id="bridge-tf">60s</div>
+    <div id="bridge-data-gap"></div>
+    <div id="bridge-count"><span id="bridge-count-n">0</span> velas recibidas</div>
+  </div>
+
+  <!-- ── SENTIMIENTO ───────────────────────────────────── -->
+  <div id="sent-section">
+    <div id="sent-dot"></div>
+    <div class="sent-track"><div id="sent-fill" style="width:50%"></div></div>
+    <div id="sent-lbl">Acumulando…</div>
+    <div id="sent-score">–</div>
+  </div>
+
+  <!-- ── TP / SL ───────────────────────────────────────── -->
+  <div id="tpsl-box">
+    <div class="tpsl-header">
+      <div class="tpsl-title">Take Profit · Stop Loss</div>
+      <div id="tpsl-rr">RR –</div>
+    </div>
+    <div class="tpsl-row tp">
+      <div class="tpsl-lbl">TP</div>
+      <div class="tpsl-track"><div class="tpsl-fill" id="tp-bar" style="width:0%"></div></div>
+      <div class="tpsl-val" id="tp-val">–</div>
+    </div>
+    <div class="tpsl-row sl">
+      <div class="tpsl-lbl">SL</div>
+      <div class="tpsl-track"><div class="tpsl-fill" id="sl-bar" style="width:0%"></div></div>
+      <div class="tpsl-val" id="sl-val">–</div>
+    </div>
+  </div>
+
+  <!-- ── HISTORIAL DE VELAS ─────────────────────────────── -->
+  <div id="candle-section">
+    <div id="candle-count-wrap"><span id="candle-count">0</span> velas</div>
+    <div id="candle-strip"></div>
+  </div>
+
+  <!-- ── STATS ─────────────────────────────────────────── -->
+  <div id="stats-section">
+    <div class="stat-card">
+      <div class="stat-lbl">Precisión</div>
+      <div id="acc-box"><span class="acc-empty">Sin datos</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-lbl">Memoria IA</div>
+      <div id="mem-count">0 patrones</div>
+    </div>
+  </div>
+
+  <!-- ── STATUS BAR ─────────────────────────────────────── -->
+  <div id="statusbar">
+    <div id="wifi-title">Bridge desconectado — activa AUTO para recibir datos</div>
+    <div id="status-time"></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ── TOAST ─────────────────────────────────────────────── -->
+<div id="toast-wrap"></div>
+
+<!-- ── LEGACY IDs (compatibilidad con logic.js) ───────────── -->
+<div id="hidden-legacy">
+  <div id="bridge-status"></div><div id="auto-status"></div>
+  <div id="wifi-conf-wrap"><div id="wg"></div><div id="wr"></div></div>
+  <div id="wlbl"></div><div id="hrow"></div><div id="hcnt"></div>
+  <div id="idx-tpsl"><div id="idx-tp-fill"></div><div id="idx-sl-fill"></div>
+    <div id="idx-tp-val"></div><div id="idx-sl-val"></div><div id="idx-tpsl-rr"></div></div>
+  <div id="verdict-box"><div id="verdict-icon"></div><div id="verdict-action"></div>
+    <div id="verdict-reason"></div><div id="verdict-score"></div></div>
+  <div id="sentiment-bar"><div id="sentiment-fill"></div><div id="sentiment-label"></div><div id="sentiment-msg"></div></div>
+  <div id="best-hour-msg"></div><div id="consensus-panel"></div>
+  <div id="smc-label"></div><div id="judas-override"></div>
+  <div id="main-signal"><div id="main-signal-text"></div></div>
+  <div id="confidence-text"></div><div id="tpsl-wrap"></div>
+  <div id="extreme-alert"><div id="extreme-text"></div></div>
+  <div id="current-analysis"><div id="current-strength"></div><div id="current-origin"></div><div id="current-verdict"></div></div>
+  <div id="recent-sequence"></div><div id="recent-analysis"></div>
+  <div id="momentum-box"><div id="momentum-fill"></div><div id="momentum-detail"></div></div>
+  <div id="priority-explanation"></div><div id="logic-explanation"><div id="logic-text"></div></div>
+  <div id="proj-g-extreme"></div><div id="proj-r-extreme"></div>
+  <div id="pp-ref-manual"></div><div id="pp-spread"></div>
+  <div id="logdrawer"></div><div id="logarr"></div><div id="loglbl"></div>
+  <div id="logbody"></div><div id="logcopy"></div>
+  <!-- sent-bar alias for logic.js -->
+  <div id="sent-bar"></div>
+</div>
+
+<!-- ══ SCRIPTS ═══════════════════════════════════════════ -->
+<script src="logic.js"></script>
+<script src="voice.js"></script>
+
+<script>
+/* ── Clock ───────────────────────────────────────────────── */
+(function clock(){
+  var el = document.getElementById('status-time');
+  function tick(){
+    if(!el) return;
+    var d = new Date();
+    el.textContent = d.toLocaleTimeString('es-PR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+  tick(); setInterval(tick, 1000);
+})();
+
+/* ── Toast helper ────────────────────────────────────────── */
+function showToast(msg, type) {
+  var wrap = document.getElementById('toast-wrap');
+  if(!wrap) return;
+  var t = document.createElement('div');
+  t.className = 'toast ' + (type || 'info');
+  t.textContent = msg;
+  wrap.appendChild(t);
+  setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 3300);
+}
+window.showToast = showToast;
+
+/* ── Bridge data display ─────────────────────────────────── */
+var _bridgeTotalCandles = 0;
+
+function updateBridgeDataUI(data) {
+  // data: {color, strength, asset, tf}
+  var panel = document.getElementById('bridge-data');
+  if(panel) panel.classList.remove('hidden');
+
+  _bridgeTotalCandles++;
+  var isG = (data.color || '').toUpperCase() === 'G';
+
+  var pill = document.getElementById('last-candle-pill');
+  if(pill){ pill.className = ''; pill.classList.add(isG ? 'green' : 'red'); }
+
+  var txt = document.getElementById('lcp-text');
+  if(txt) txt.textContent = isG ? '▲ VERDE' : '▼ ROJA';
+
+  var str = document.getElementById('lcp-strength');
+  if(str) str.textContent = 'F' + (data.strength || 2);
+
+  var asset = document.getElementById('asset-tag');
+  if(asset && data.asset && data.asset !== 'deal'){
+    asset.textContent = data.asset.replace(/[^A-Z0-9/_-]/gi,'').slice(0,18);
+  }
+
+  var tf = document.getElementById('bridge-tf');
+  if(tf && data.tf) tf.textContent = data.tf >= 60 ? (data.tf/60)+'m' : data.tf+'s';
+
+  var cnt = document.getElementById('bridge-count-n');
+  if(cnt) cnt.textContent = _bridgeTotalCandles;
+
+  // Toast corto con la vela recibida
+  var strLabel = ['','Doji','Normal','Grande','Engulfing'];
+  var label = strLabel[Math.round(data.strength||2)] || 'F'+(data.strength||2);
+  showToast((isG ? '▲ VERDE' : '▼ ROJA') + '  ' + label + (data.asset && data.asset!=='deal' ? '  ·  '+data.asset.slice(0,10) : ''), isG ? 'green' : 'red');
+}
+window.updateBridgeDataUI = updateBridgeDataUI;
+
+/* ── Icon sync con señal ─────────────────────────────────── */
+(function(){
+  var origRender = window.render;
+  window.render = function(){
+    if(origRender) origRender();
+
+    var card = document.getElementById('signal-card');
+    var icon = document.getElementById('sig-icon');
+    if(!card || !icon) return;
+
+    var cls = card.className || '';
+    if     (cls.includes('buy'))  icon.textContent = '▲';
+    else if(cls.includes('sell')) icon.textContent = '▼';
+    else                          icon.textContent = '⏸';
+
+    // Status bar text
+    var t = document.getElementById('wifi-title');
+    if(t){
+      var autoOn = document.getElementById('auto-btn');
+      if(autoOn && autoOn.classList.contains('on'))
+        t.textContent = 'Bridge activo — recibiendo datos de Pocket Option';
+      else
+        t.textContent = 'Bridge desconectado — activa AUTO para recibir datos';
+    }
+
+    // Sentiment section class
+    var sent = window._sentiment;
+    var ss = document.getElementById('sent-section');
+    if(ss && sent){
+      ss.className = 'sent-section ' + (sent.dir === 'G' ? 'bull' : 'bear');
+    }
+  };
+})();
+
+/* ── localStorage bridge — detecta velas de la extensión ─── */
+var _extLastTs = 0;
+var _autoMode  = false;
+
+window.toggleAutoMode = function() {
+  _autoMode = !_autoMode;
+  var btn = document.getElementById('auto-btn');
+  if(btn){
+    btn.textContent = _autoMode ? '🟢 AUTO' : '⚫ AUTO';
+    btn.className   = _autoMode ? 'ctrl-btn on' : 'ctrl-btn';
+  }
+  var dot = document.getElementById('bridge-dot');
+  var lbl = document.getElementById('bridge-label');
+  var bw  = document.getElementById('bridge-wrap');
+  if(!_autoMode){
+    if(dot){ dot.className=''; }
+    if(lbl) lbl.textContent = 'OFFLINE';
+    if(bw)  bw.className = '';
+  } else {
+    showToast('Bridge activado — escuchando Pocket Option', 'info');
+  }
+  if(typeof render === 'function') render();
+};
+
+/* Poll localStorage (cmd-ext-candle escrito por background.js) */
+setInterval(function() {
+  if(!_autoMode) return;
+  try {
+    var ts = parseInt(localStorage.getItem('cmd-ext-candle-ts') || '0');
+    if(ts <= _extLastTs) return;
+    _extLastTs = ts;
+    var raw = localStorage.getItem('cmd-ext-candle');
+    if(!raw) return;
+    var data = JSON.parse(raw);
+    if(!data.color) return;
+    if(Date.now() - (data.timestamp||0) > 8000) return;
+
+    // ① alimentar el motor IA
+    quickAddCandle(data.color, data.strength || 2);
+
+    // ② mostrar datos en UI
+    updateBridgeDataUI({
+      color   : data.color,
+      strength: data.strength || 2,
+      asset   : data.asset || '',
+      tf      : data.tf || 60,
+    });
+
+    // ③ bridge dot LIVE
+    var dot = document.getElementById('bridge-dot');
+    var lbl = document.getElementById('bridge-label');
+    var bw  = document.getElementById('bridge-wrap');
+    if(dot){ dot.className='on'; }
+    if(lbl) lbl.textContent = 'LIVE';
+    if(bw)  bw.className = 'live';
+
+  } catch(e) {}
+}, 500);
+
+/* Bridge freshness checker */
+setInterval(function() {
+  if(!_autoMode) return;
+  try {
+    var ts  = parseInt(localStorage.getItem('cmd-ext-candle-ts') || '0');
+    var age = ts ? (Date.now() - ts) : Infinity;
+    var dot = document.getElementById('bridge-dot');
+    var lbl = document.getElementById('bridge-label');
+    var bw  = document.getElementById('bridge-wrap');
+    if(!dot) return;
+    if      (age < 15000) { dot.className='on';   if(lbl)lbl.textContent='LIVE';   if(bw)bw.className='live'; }
+    else if (age < 60000) { dot.className='warn';  if(lbl)lbl.textContent=Math.round(age/1000)+'s'; if(bw)bw.className='warn'; }
+    else                  { dot.className='';       if(lbl)lbl.textContent='OFFLINE'; if(bw)bw.className=''; }
+  } catch(e) {}
+}, 3000);
+
+/* ── Render on load ──────────────────────────────────────── */
+window.addEventListener('load', function(){
+  if(typeof render === 'function') render();
+});
+</script>
+
+</body>
+</html>
